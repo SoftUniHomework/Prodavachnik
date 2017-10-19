@@ -315,7 +315,7 @@ function startApp() {
             method: "GET",
             url: kinveyBookUrl,
             headers: kinveyAuthHeaders,
-            success: loadAdvertForEditSuccess
+            success: loadAdvertForEditSuccess,
             error: handleAjaxError
         });
 
