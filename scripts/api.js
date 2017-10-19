@@ -1,5 +1,5 @@
 (function () {
-// Mock repository
+    // Mock repository
     let adverts = [
         {
             _id: 0,
@@ -7,9 +7,11 @@
                 creator: 0
             },
             title: "XBoss 1080",
+            description: "Modded gaming console",
             publisher: "Pesho",
             datePublished: "2017-06-04",
-            price: 100
+            price: 100,
+            image: "./static/fuze-f1.png"
         }
     ];
 
@@ -39,6 +41,7 @@
             password: "m"
         }
     ];
+
 
     // User login
     $.mockjax(function (requestSettings) {
@@ -111,9 +114,9 @@
         }
     });
 
-// Loading of adverts
+    // Loading of adverts
     $.mockjax(function (requestSettings) {
-        if (requestSettings.url==="https://mock.api.com/appdata/kid_rk/adverts" &&
+        if (requestSettings.url === "https://mock.api.com/appdata/kid_rk/adverts" &&
             requestSettings.method === "GET") {
             return {
                 response: function (origSettings) {
@@ -127,7 +130,8 @@
             };
         }
     });
-// Create advert
+
+    // Create advert
     $.mockjax(function (requestSettings) {
         if (requestSettings.url === "https://mock.api.com/appdata/kid_rk/adverts" &&
             requestSettings.method === "POST") {
@@ -182,6 +186,24 @@
         }
     });
 
+    // Load single advert
+    $.mockjax(function (requestSettings) {
+        if (requestSettings.url.match(/https:\/\/mock\.api\.com\/appdata\/kid_rk\/adverts\/(.+)/) &&
+            requestSettings.method === "GET") {
+            let advertId = Number(requestSettings.url.match(/https:\/\/mock\.api\.com\/appdata\/kid_rk\/adverts\/(.+)/)[1]);
+            return {
+                response: function (origSettings) {
+                    if (requestSettings.headers["Authorization"].includes("Kinvey mock_token")) {
+                        let advert = adverts.filter(a => a._id === advertId);
+                        this.responseText = advert.shift();
+                    } else {
+                        this.status = 403;
+                        this.responseText = "You are not authorized";
+                    }
+                }
+            };
+        }
+    });
 
     // Edit advert
     $.mockjax(function (requestSettings) {
@@ -200,7 +222,7 @@
                             advert.publisher = data.publisher;
                             advert.datePublished = data.datePublished;
                             advert.price = data.price;
-                            advert.image = data.image;
+							advert.image = data.image;
                             this.responseText = advert;
                         }
                         this.responseText = {};
