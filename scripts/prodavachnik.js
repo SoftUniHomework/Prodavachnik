@@ -1,9 +1,9 @@
 function startApp() {
+
     if (sessionStorage.getItem('authToken') !== null) {
         let username = sessionStorage.getItem('username');
         $('#loggedInUser').text("Welcome, " + username + "!");
     }
-
     showHideMenuLinks();
     showHomeView();
 
@@ -31,7 +31,6 @@ function startApp() {
         ajaxStart: function() { $("#loadingBox").show() },
         ajaxStop: function() { $("#loadingBox").hide() }
     });
-
 
     const kinveyBaseUrl = "https://mock.api.com/";
     const kinveyAppKey = "kid_rk";
@@ -85,7 +84,6 @@ function startApp() {
             errorMsg = response.responseJSON.description;
         showError(errorMsg);
     }
-
 
     function showHomeView() {
         showView('viewHome');
@@ -142,7 +140,6 @@ function startApp() {
         let username = userInfo.username;
         sessionStorage.setItem('username', username);
         $('#loggedInUser').text("Welcome, " + username + "!");
-
     }
 
     // user/register
@@ -171,7 +168,7 @@ function startApp() {
             saveAuthInSession(userInfo);
             showHideMenuLinks();
             listAdverts();
-		showInfo('User registration successful.');
+            showInfo('User registration successful.');
         }
     }
 
@@ -209,29 +206,33 @@ function startApp() {
                 let advertsTable = $('<table>')
                     .append($('<tr>').append(
                         '<th>Title</th>',
+                        '<th>Description</th>',
                         '<th>Publisher</th>',
                         '<th>Date Published</th>',
                         '<th>Price</th>',
-			'<th>Actions</th>')
+                        '<th>Actions</th>')
                     );
 
                 for (let advert of adverts) {
-                    let links = [];
+                    let readMoreLink = $(`<a data-id="${advert._id}" href="#">[Read More]</a>`)
+                        .click(function() { displayAdvert($(this).attr("data-id")) });
+                    let links = [readMoreLink];
 
                     if (advert._acl.creator == sessionStorage['userId']) {
                         let deleteLink = $(`<a data-id="${advert._id}" href="#">[Delete]</a>`)
                             .click(function() { deleteAdvert($(this).attr("data-id")) });
                         let editLink = $(`<a data-id="${advert._id}" href="#">[Edit]</a>`)
                             .click(function() { loadAdvertForEdit($(this).attr("data-id")) });
-                        links = [deleteLink, ' ', editLink];
+                        links = [readMoreLink, ' ', deleteLink, ' ', editLink];
                     }
 
                     advertsTable.append($('<tr>').append(
                         $('<td>').text(advert.title),
+                        $('<td>').text(advert.description),
                         $('<td>').text(advert.publisher),
                         $('<td>').text(advert.datePublished),
                         $('<td>').text(advert.price),
-   			$('<td>').append(links)
+                        $('<td>').append(links)
                     ));
                 }
 
@@ -239,6 +240,7 @@ function startApp() {
             }
         }
     }
+
     // advertisement/create
     function createAdvert() {
         const kinveyAuthHeaders = {
@@ -259,11 +261,11 @@ function startApp() {
         function afterPublisherRequest(publisher) {
             let advertData = {
                 title: $('#formCreateAd input[name=title]').val(),
-        	description: $('#formCreateAd textarea[name=description]').val(),
+                description: $('#formCreateAd textarea[name=description]').val(),
                 publisher: publisher.username,
                 datePublished: $('#formCreateAd input[name=datePublished]').val(),
-                price: Number($('#formCreateAd input[name=price]').val())()),
-       		image: $('#formCreateAd input[name=image]').val()
+                price: Number($('#formCreateAd input[name=price]').val()),
+                image: $('#formCreateAd input[name=image]').val()
             };
 
             const kinveyAdvertsUrl = kinveyBaseUrl + "appdata/" + kinveyAppKey + "/adverts";
@@ -325,11 +327,47 @@ function startApp() {
             $('#formEditAd input[name=id]').val(advert._id);
             $('#formEditAd input[name=title]').val(advert.title);
             $('#formEditAd input[name=publisher]').val(advert.publisher);
-    	    $('#formEditAd textarea[name=description]').val(advert.description);
+            $('#formEditAd textarea[name=description]').val(advert.description);
             $('#formEditAd input[name=datePublished]').val(advert.datePublished);
             $('#formEditAd input[name=price]').val(advert.price);
-    	    $('#formEditAd input[name=image]').val(advert.image);
+            $('#formEditAd input[name=image]').val(advert.image);
             showView('viewEditAd');
+        }
+    }
+
+    function displayAdvert(advertId){
+        const kinveyAdvertUrl = kinveyBaseUrl + "appdata/" +
+            kinveyAppKey + "/adverts/" + advertId;
+        const kinveyAuthHeaders = {
+            'Authorization': "Kinvey " + sessionStorage.getItem('authToken'),
+        };
+
+        $.ajax({
+            method: "GET",
+            url: kinveyAdvertUrl,
+            headers: kinveyAuthHeaders,
+            success: displayAdvertSuccess,
+            error: handleAjaxError
+        });
+
+        $('#viewDetailsAd').empty();
+
+        function displayAdvertSuccess(advert) {
+            let advertInfo = $('<div>').append(
+                $('<img>').attr("src", advert.image),
+                $('<br>'),
+                $('<label>').text('Title:'),
+                $('<h1>').text(advert.title),
+                $('<label>').text('Description:'),
+                $('<p>').text(advert.description),
+                $('<label>').text('Publisher:'),
+                $('<div>').text(advert.publisher),
+                $('<label>').text('Date:'),
+                $('<div>').text(advert.datePublished));
+
+            $('#viewDetailsAd').append(advertInfo);
+
+            showView('viewDetailsAd');
         }
     }
 
